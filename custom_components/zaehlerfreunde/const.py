@@ -1,6 +1,6 @@
 """Constants for the Zaehlerfreunde integration."""
 
-DOMAIN = "zaehlerfreunde"
+PARTNER_ID = "zaehlerfreunde"
 PLATFORMS = ["sensor"]
 DEFAULT_NAME = "Zählerfreunde"
 

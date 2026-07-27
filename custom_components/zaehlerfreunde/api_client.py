@@ -23,6 +23,7 @@ class TokenExpiredError(LinkSessionError):
 
 async def async_start_link_session(
     instance_id: str,
+    partner_id: str | None = None,
     category: str | None = None,
     device_name: str | None = None,
 ) -> dict[str, Any]:
@@ -30,6 +31,7 @@ async def async_start_link_session(
 
     Args:
         instance_id: The Home Assistant instance ID.
+        partner_id: The partner/integration identifier.
         category: The device category being linked (e.g. 'inverters').
         device_name: The display name of the selected HA device.
 
@@ -40,13 +42,16 @@ async def async_start_link_session(
         LinkSessionError: If the request fails.
     """
     _LOGGER.debug(
-        "Starting link session for instance %s (category=%s, device=%s)",
+        "Starting link session for instance %s (partner_id=%s, category=%s, device=%s)",
         instance_id,
+        partner_id,
         category,
         device_name,
     )
     try:
         payload: dict[str, Any] = {"instance_id": instance_id}
+        if partner_id is not None:
+            payload["partner_id"] = partner_id
         if category is not None:
             payload["category"] = category
         if device_name is not None:

@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, LAST_UPLOAD_SENSOR_KEY
+from .const import PARTNER_ID, LAST_UPLOAD_SENSOR_KEY
 
 
 async def async_setup_entry(
@@ -21,7 +21,7 @@ async def async_setup_entry(
     """Set up Zaehlerfreunde sensors from a config entry."""
     sensor = ZaehlerfreundeLastUploadSensor(entry)
     async_add_entities([sensor])
-    hass.data[DOMAIN][entry.entry_id][LAST_UPLOAD_SENSOR_KEY] = sensor
+    hass.data[PARTNER_ID][entry.entry_id][LAST_UPLOAD_SENSOR_KEY] = sensor
 
 
 class ZaehlerfreundeLastUploadSensor(SensorEntity):
@@ -37,7 +37,7 @@ class ZaehlerfreundeLastUploadSensor(SensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_last_upload"
         self._attr_name = "Last upload"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
+            identifiers={(PARTNER_ID, entry.entry_id)},
             name=entry.title,
             manufacturer="Zählerfreunde",
         )

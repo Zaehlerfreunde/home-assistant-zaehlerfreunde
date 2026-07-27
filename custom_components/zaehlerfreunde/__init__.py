@@ -11,7 +11,7 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_track_state_report_event
 
 from .api_client import LinkSessionError, TokenExpiredError, async_refresh_tokens, async_send_sensor_value
-from .const import CONF_ACCESS_TOKEN, CONF_ENTITY_ROLES, CONF_REFRESH_TOKEN, DOMAIN, LAST_UPLOAD_SENSOR_KEY, PLATFORMS
+from .const import CONF_ACCESS_TOKEN, CONF_ENTITY_ROLES, CONF_REFRESH_TOKEN, PARTNER_ID, LAST_UPLOAD_SENSOR_KEY, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,13 +20,13 @@ type ZaehlerfreundeConfigEntry = ConfigEntry
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration via YAML (no-op)."""
-    hass.data.setdefault(DOMAIN, {})
+    hass.data.setdefault(PARTNER_ID, {})
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry) -> bool:
     """Set up Zaehlerfreunde from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
+    hass.data.setdefault(PARTNER_ID, {})
 
     entity_roles = entry.data.get(CONF_ENTITY_ROLES, {})
 
@@ -59,7 +59,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntr
             role,
             new_state.state,
         )
-        current_access_token: str = hass.data[DOMAIN][entry.entry_id].get(CONF_ACCESS_TOKEN, "")
+        current_access_token: str = hass.data[PARTNER_ID][entry.entry_id].get(CONF_ACCESS_TOKEN, "")
 
         hass.async_create_task(
             _async_forward_sensor_value(
@@ -81,7 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntr
         else lambda: None
     )
 
-    hass.data[DOMAIN][entry.entry_id] = {
+    hass.data[PARTNER_ID][entry.entry_id] = {
         CONF_ACCESS_TOKEN: access_token,
         CONF_ENTITY_ROLES: entity_roles,
         "unsub_options_update_listener": entry.add_update_listener(_async_options_updated),
@@ -133,7 +133,7 @@ async def _async_forward_sensor_value(
                 CONF_REFRESH_TOKEN: new_refresh_token,
             },
         )
-        entry_data = hass.data[DOMAIN].get(entry.entry_id)
+        entry_data = hass.data[PARTNER_ID].get(entry.entry_id)
         if entry_data is not None:
             entry_data[CONF_ACCESS_TOKEN] = new_access_token
         try:
@@ -154,8 +154,8 @@ async def _async_forward_sensor_value(
 
 def _record_last_upload(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry) -> None:
     """Clear the repair issue and update the sensor on a successful upload."""
-    ir.async_delete_issue(hass, DOMAIN, f"upload_failed_{entry.entry_id}")
-    entry_data = hass.data[DOMAIN].get(entry.entry_id)
+    ir.async_delete_issue(hass, PARTNER_ID, f"upload_failed_{entry.entry_id}")
+    entry_data = hass.data[PARTNER_ID].get(entry.entry_id)
     if entry_data is None:
         return
     sensor = entry_data.get(LAST_UPLOAD_SENSOR_KEY)
@@ -167,7 +167,7 @@ def _record_upload_error(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry, 
     """Create a repair issue and update the sensor on a failed upload."""
     ir.async_create_issue(
         hass,
-        DOMAIN,
+        PARTNER_ID,
         f"upload_failed_{entry.entry_id}",
         is_fixable=False,
         severity=ir.IssueSeverity.WARNING,
@@ -177,7 +177,7 @@ def _record_upload_error(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry, 
             "error": message,
         },
     )
-    entry_data = hass.data[DOMAIN].get(entry.entry_id)
+    entry_data = hass.data[PARTNER_ID].get(entry.entry_id)
     if entry_data is None:
         return
     sensor = entry_data.get(LAST_UPLOAD_SENSOR_KEY)
@@ -190,11 +190,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEnt
     _LOGGER.debug("Unloading Zaehlerfreunde entry %s", entry.entry_id)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        entry_data = hass.data[DOMAIN].get(entry.entry_id)
+        entry_data = hass.data[PARTNER_ID].get(entry.entry_id)
         if entry_data:
             entry_data["unsub_options_update_listener"]()
             entry_data["unsub_state_listener"]()
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        hass.data[PARTNER_ID].pop(entry.entry_id, None)
         _LOGGER.debug("Successfully unloaded Zaehlerfreunde entry %s", entry.entry_id)
     else:
         _LOGGER.warning("Failed to unload platforms for Zaehlerfreunde entry %s", entry.entry_id)

@@ -31,7 +31,7 @@ from .const import (
     CONF_SETUP_CODE,
     DEFAULT_NAME,
     DEVICE_SELECTION_KEYS,
-    DOMAIN,
+    PARTNER_ID,
     LINK_POLLING_INTERVAL_SECONDS,
     LINK_POLLING_TIMEOUT_SECONDS,
     CONF_ENTITY_ROLES,
@@ -142,7 +142,7 @@ def _build_entry_description(category: str, device_name: str, role_entities: dic
     return f"type={category_label}; device={device_name}; entities={entity_list}"
 
 
-class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
     """Handle a config flow for Zaehlerfreunde."""
 
     VERSION = 1
@@ -292,6 +292,7 @@ class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                 link_session = await async_start_link_session(
                     ha_instance_id,
+                    partner_id=PARTNER_ID,
                     category=self._selected_category,
                     device_name=_device_name(self.hass, self._selected_device_id) if self._selected_device_id else DEFAULT_NAME,
                 )
