@@ -1,0 +1,80 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Welcome to Zählerfreunde",
+        "description": "This integration connects your Home Assistant instance to the Zählerfreunde platform.\n\nDuring the setup, you will:\n1. **Select a device category** (e.g. inverter, electricity meter, battery).\n2. **Optionally select the Home Assistant device** that belongs to this category (skip to allow any entity).\n3. **Map entities** to their corresponding sensor roles.\n4. **Authorize the connection** by briefly signing in on the Zählerfreunde website.\n\nClick **Submit** to get started.",
+        "data": {}
+      },
+      "select_category": {
+        "title": "What would you like to add?",
+        "description": "Please select the type of device you would like to add.",
+        "data": {
+          "category": "Device"
+        }
+      },
+      "select_device": {
+        "title": "Which device would you like to add?",
+        "description": "Optionally select the device you would like to add. If you skip this step, all entities will be available for mapping.",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "select_entities": {
+        "title": "What is being measured?",
+        "description": "Select which entities should be sent to Zählerfreunde.",
+        "data": {
+          "solar_power": "Solar power",
+          "solar_yield_total": "Total solar yield (total energy generated)",
+          "grid_power": "Grid power (positive: import, negative: export)",
+          "battery_power": "Battery charging power",
+          "battery_soc": "Battery state of charge (%)",
+          "consumption_power": "Power consumption"
+        }
+      },
+      "link_open": {
+        "title": "Connect to Zählerfreunde",
+        "description": "Opening the Zählerfreunde authorization page..."
+      },
+      "link_start": {
+        "title": "Waiting for authorization",
+        "description": "Please complete the authorization in the browser window that has just opened. This dialog will automatically continue afterwards."
+      },
+      "link_error": {
+        "title": "Connection failed",
+        "description": "Oops, something went wrong. Click **Submit** to try again.\n\n`{error_detail}`"
+      }
+    },
+    "error": {
+      "invalid_category": "Please select a valid category.",
+      "no_device_selected": "Please select a device.",
+      "no_entities_for_device": "The selected device has no selectable entities.",
+      "no_entities_selected": "Please select at least one entity.",
+      "invalid_link_response": "The server returned an unexpected response. Please check the Home Assistant logs.",
+      "link_session_failed": "Failed to start the connection session. Please check your internet connection and try again.",
+      "link_status_check_failed": "Failed to check the connection status. Please check your internet connection and try again.",
+      "link_timeout": "The authorization has timed out. Please try again.",
+      "unexpected_error": "An unexpected error occurred. Please check the Home Assistant logs for more information."
+    },
+    "abort": {
+      "already_configured": "Zählerfreunde has already been configured."
+    }
+  },
+  "selector": {
+    "category": {
+      "options": {
+        "inverters": "Inverter",
+        "grid_meters": "Grid meter",
+        "battery_storages": "Battery storage",
+        "heat_pumps": "Heat pump",
+        "car_chargers": "Car charger"
+      }
+    }
+  },
+  "issues": {
+    "upload_failed": {
+      "title": "Sensor upload failed for {entry_title}",
+      "description": "Error uploading sensor data: {error}"
+    }
+  }
+}

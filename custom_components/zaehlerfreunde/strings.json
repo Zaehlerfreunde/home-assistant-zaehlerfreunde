@@ -1,0 +1,123 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Welcome to Zählerfreunde",
+        "description": "This integration connects your Home Assistant instance to the Zählerfreunde platform.\n\nDuring setup you will:\n1. **Select a device category** (e.g. inverter, grid meter, battery).\n2. **Optionally pick the Home Assistant device** that belongs to that category (skip to allow any entity).\n3. **Map its entities** to the correct sensor roles.\n4. **Authorize the connection** by completing a quick login on the Zählerfreunde website.\n\nClick **Submit** to get started.",
+        "data": {}
+      },
+      "select_category": {
+        "title": "Select category",
+        "description": "Select what type of system you want to add.",
+        "data": {
+          "category": "Category"
+        }
+      },
+      "select_device": {
+        "title": "Select device",
+        "description": "Optionally select the Home Assistant device for this category. If skipped, all entities will be available for mapping.",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "select_entities": {
+        "title": "Select entities",
+        "description": "Map the device's entities to their roles.",
+        "data": {
+          "solar_power": "Solar power",
+          "solar_yield_total": "Solar yield total"
+        }
+      },
+      "link_open": {
+        "title": "Link with Zählerfreunde",
+        "description": "Opening the Zählerfreunde authorization page..."
+      },
+      "link_start": {
+        "title": "Waiting for authorization",
+        "description": "Please complete the authorization in the browser window that just opened. This dialog will advance automatically."
+      },
+      "link_error": {
+        "title": "Link Failed",
+        "description": "Oops, something went wrong. Click Submit to try again.\n\n`{error_detail}`"
+      },
+      "add_more": {
+        "title": "Add more",
+        "description": "Do you want to add another category/device/entity mapping?",
+        "data": {
+          "add_more": "Add another mapping"
+        }
+      }
+    },
+    "error": {
+      "invalid_category": "Select a valid category.",
+      "no_device_selected": "Select a device.",
+      "no_entities_for_device": "The selected device has no selectable sensors.",
+      "no_entities_selected": "Select at least one sensor.",
+      "invalid_link_response": "The server returned an unexpected response. Check Home Assistant logs.",
+      "link_session_failed": "Failed to start a link session. Check your connection and try again.",
+      "link_status_check_failed": "Failed to check link status. Check your connection and try again.",
+      "link_timeout": "Authorization timed out. Please try again.",
+      "unexpected_error": "An unexpected error occurred. Check Home Assistant logs for details."
+    },
+    "abort": {
+      "already_configured": "Zählerfreunde is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "select_category": {
+        "title": "Select category",
+        "description": "Select what type of system you want to add.",
+        "data": {
+          "category": "Category"
+        }
+      },
+      "select_device": {
+        "title": "Select device",
+        "description": "Optionally select the Home Assistant device for this category. If skipped, all entities will be available for mapping.",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "select_entities": {
+        "title": "Select sensors",
+        "description": "Map the device's sensors to their roles.",
+        "data": {
+          "solar_power": "Solar power",
+          "solar_yield_total": "Solar yield total"
+        }
+      },
+      "add_more": {
+        "title": "Add more",
+        "description": "Do you want to add another category/device/entity mapping?",
+        "data": {
+          "add_more": "Add another mapping"
+        }
+      }
+    },
+    "error": {
+      "invalid_category": "Select a valid category.",
+      "no_device_selected": "Select a device.",
+      "no_entities_for_device": "The selected device has no selectable sensors.",
+      "no_entities_selected": "Select at least one sensor.",
+      "unexpected_error": "An unexpected error occurred. Check Home Assistant logs for details."
+    }
+  },
+  "selector": {
+    "category": {
+      "options": {
+        "inverters": "Inverters",
+        "grid_meters": "Grid meters",
+        "battery_storages": "Battery storages",
+        "heat_pumps": "Heat pumps",
+        "car_chargers": "Car chargers"
+      }
+    }
+  },
+  "issues": {
+    "upload_failed": {
+      "title": "Sensor upload failed for {entry_title}",
+      "description": "Failed to upload sensor data: {error}"
+    }
+  }
+}

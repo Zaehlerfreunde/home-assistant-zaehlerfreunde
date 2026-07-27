@@ -1,0 +1,80 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Willkommen bei Zählerfreunde",
+        "description": "Diese Integration verbindet Ihre Home Assistant-Instanz mit der Zählerfreunde-Plattform.\n\nWährend der Einrichtung werden Sie:\n1. **Eine Gerätekategorie auswählen** (z. B. Wechselrichter, Stromzähler, Batterie).\n2. **Optional ein Home Assistant-Gerät auswählen**, das zu dieser Kategorie gehört (überspringen, um alle Entitäten zuzulassen).\n3. **Entitäten zuordnen** und den richtigen Sensorrollen zuweisen.\n4. **Die Verbindung autorisieren**, indem Sie sich kurz auf der Zählerfreunde-Website einloggen.\n\nKlicken Sie auf **Absenden**, um zu beginnen.",
+        "data": {}
+      },
+      "select_category": {
+        "title": "Was möchten Sie hinzufügen?",
+        "description": "Wählen Sie bitte aus welche Art von Gerät Sie hinzufügen möchten.",
+        "data": {
+          "category": "Gerät"
+        }
+      },
+      "select_device": {
+        "title": "Welches Gerät möchten Sie hinzufügen?",
+        "description": "Wählen Sie optional das Gerät aus, das Sie hinzufügen möchten. Wenn Sie diesen Schritt überspringen, stehen alle Entitäten zur Zuordnung zur Verfügung.",
+        "data": {
+          "device_id": "Gerät"
+        }
+      },
+      "select_entities": {
+        "title": "Was wird gemessen?",
+        "description": "Wählen Sie aus, welche Entitäten an Zählerfreunde gesendet werden sollen.",
+        "data": {
+          "solar_power": "Solarleistung",
+          "solar_yield_total": "Gesamter Solarertrag (Wie viel Strom insgesamt erzeugt wurde)",
+          "grid_power": "Netzleistung (positiv: Bezug, negativ: Einspeisung)",
+          "battery_power": "Batterieladeleistung",
+          "battery_soc": "Batterieladestand (in %)",
+          "consumption_power": "Verbrauchsleistung"
+        }
+      },
+      "link_open": {
+        "title": "Mit Zählerfreunde verbinden",
+        "description": "Die Autorisierungsseite von Zählerfreunde wird geöffnet..."
+      },
+      "link_start": {
+        "title": "Warten auf Autorisierung",
+        "description": "Bitte schließen Sie die Autorisierung im soeben geöffneten Browserfenster ab. Dieser Dialog wird anschließend automatisch fortgesetzt."
+      },
+      "link_error": {
+        "title": "Verbindung fehlgeschlagen",
+        "description": "Ups, etwas ist schiefgelaufen. Klicken Sie auf „Absenden“, um es erneut zu versuchen.\n\n`{error_detail}`"
+      }
+    },
+    "error": {
+      "invalid_category": "Wählen Sie eine gültige Kategorie aus.",
+      "no_device_selected": "Wählen Sie ein Gerät aus.",
+      "no_entities_for_device": "Das ausgewählte Gerät verfügt über keine auswählbaren Entitäten.",
+      "no_entities_selected": "Wählen Sie mindestens eine Entität aus.",
+      "invalid_link_response": "Der Server hat eine unerwartete Antwort zurückgegeben. Überprüfen Sie die Home Assistant-Protokolle.",
+      "link_session_failed": "Die Verbindungssitzung konnte nicht gestartet werden. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+      "link_status_check_failed": "Der Verbindungsstatus konnte nicht überprüft werden. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+      "link_timeout": "Die Autorisierung ist abgelaufen. Bitte versuchen Sie es erneut.",
+      "unexpected_error": "Ein unerwarteter Fehler ist aufgetreten. Weitere Informationen findest du in den Home Assistant-Protokollen."
+    },
+    "abort": {
+      "already_configured": "Zählerfreunde ist bereits eingerichtet."
+    }
+  },
+  "selector": {
+    "category": {
+      "options": {
+        "inverters": "Wechselrichter",
+        "grid_meters": "Stromzähler",
+        "battery_storages": "Batteriespeicher",
+        "heat_pumps": "Wärmepumpe",
+        "car_chargers": "Ladestation"
+      }
+    }
+  },
+  "issues": {
+    "upload_failed": {
+      "title": "Sensor-Upload fehlgeschlagen fuer {entry_title}",
+      "description": "Fehler beim Hochladen der Sensordaten: {error}"
+    }
+  }
+}
