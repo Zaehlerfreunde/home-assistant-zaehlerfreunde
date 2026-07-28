@@ -139,6 +139,10 @@
     "upload_failed": {
       "title": "Sensor upload failed for {entry_title}",
       "description": "Failed to upload sensor data: {error}"
+    },
+    "command_poll_failed": {
+      "title": "Command polling failed for {entry_title}",
+      "description": "Failed to fetch HEMS commands from the backend: {error}"
     }
   }
 }

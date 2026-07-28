@@ -18,9 +18,9 @@ DEVICE_SELECTION_KEYS = [
 	CONF_CAR_CHARGERS,
 ]
 
-BACKEND_URL = "http://host.docker.internal:9081"
-INGEST_URL = "http://host.docker.internal:9090"
-HEMS_URL = "http://host.docker.internal:9084"
+BACKEND_URL = "https://external.prod.zaehlerfreunde.com"
+INGEST_URL = "https://external.prod.zaehlerfreunde.com"
+HEMS_URL = "https://external.prod.zaehlerfreunde.com"
 LINK_POLLING_INTERVAL_SECONDS = 2
 LINK_POLLING_TIMEOUT_SECONDS = 600
 

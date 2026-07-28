@@ -96,6 +96,10 @@
     "upload_failed": {
       "title": "Sensor-Upload fehlgeschlagen fuer {entry_title}",
       "description": "Fehler beim Hochladen der Sensordaten: {error}"
+    },
+    "command_poll_failed": {
+      "title": "Befehlsabfrage fehlgeschlagen für {entry_title}",
+      "description": "Fehler beim Abrufen von HEMS-Befehlen vom Backend: {error}"
     }
   }
 }

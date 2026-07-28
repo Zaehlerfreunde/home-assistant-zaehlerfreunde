@@ -306,13 +306,10 @@ class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
                     }
                     self.context["entry_data"] = entry_data
 
-                    _LOGGER.error("CHecking if any modes are selected")
-
                     # Queue option-mapping steps for any mode-control roles that were mapped.
                     role_to_entity = {role: eid for eid, role in entity_roles.items()}
                     self._pending_mode_mapping_steps = []
                     if CONF_BATTERY_MODE in role_to_entity:
-                        _LOGGER.error("The battery mode is there")
                         self._pending_mode_mapping_steps.append("map_battery_mode")
                     if CONF_HEAT_PUMP_MODE in role_to_entity:
                         self._pending_mode_mapping_steps.append("map_heat_pump_mode")

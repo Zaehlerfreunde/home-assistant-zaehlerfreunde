@@ -216,6 +216,27 @@ def _record_upload_error(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry, 
         sensor.record_error(message)
 
 
+def _clear_command_poll_issue(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry) -> None:
+    """Clear any active command poll repair issue."""
+    ir.async_delete_issue(hass, PARTNER_ID, f"command_poll_failed_{entry.entry_id}")
+
+
+def _record_command_poll_error(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry, message: str) -> None:
+    """Create a repair issue when command polling fails persistently."""
+    ir.async_create_issue(
+        hass,
+        PARTNER_ID,
+        f"command_poll_failed_{entry.entry_id}",
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="command_poll_failed",
+        translation_placeholders={
+            "entry_title": entry.title,
+            "error": message,
+        },
+    )
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.debug("Unloading Zaehlerfreunde entry %s", entry.entry_id)
@@ -255,6 +276,7 @@ async def _async_poll_commands(hass: HomeAssistant, entry: ZaehlerfreundeConfigE
             new_tokens = await async_refresh_tokens(refresh_token)
         except LinkSessionError as err:
             _LOGGER.error("Token refresh failed during command poll for entry %s: %s", entry.entry_id, err)
+            _record_command_poll_error(hass, entry, f"Token refresh failed: {err}")
             return
         access_token = new_tokens.get("access_token", "")
         hass.config_entries.async_update_entry(
@@ -270,10 +292,14 @@ async def _async_poll_commands(hass: HomeAssistant, entry: ZaehlerfreundeConfigE
             commands = await async_fetch_pending_commands(access_token, entry.entry_id)
         except LinkSessionError as err:
             _LOGGER.error("Failed to fetch commands after token refresh for entry %s: %s", entry.entry_id, err)
+            _record_command_poll_error(hass, entry, f"Failed after token refresh: {err}")
             return
     except LinkSessionError as err:
         _LOGGER.warning("Failed to fetch pending commands for entry %s: %s", entry.entry_id, err)
+        _record_command_poll_error(hass, entry, str(err))
         return
+
+    _clear_command_poll_issue(hass, entry)
 
     for command in commands:
         command_id = command.get("command_id", "<unknown>")
