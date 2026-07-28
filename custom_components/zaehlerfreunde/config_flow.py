@@ -20,21 +20,29 @@ from .api_client import (
     async_start_link_session,
 )
 from .const import (
+    BATTERY_MODES,
     CATEGORY_ROLES,
     CONF_ACCESS_TOKEN,
+    CONF_BATTERY_MODE,
+    CONF_BATTERY_MODE_MAPPINGS,
     CONF_BATTERY_STORAGES,
     CONF_CAR_CHARGERS,
+    CONF_CHARGING_RATE,
+    CONF_CHARGING_SWITCH,
+    CONF_ENTITY_ROLES,
     CONF_GRID_METERS,
+    CONF_HEAT_PUMP_MODE,
+    CONF_HEAT_PUMP_MODE_MAPPINGS,
     CONF_HEAT_PUMPS,
     CONF_INVERTERS,
     CONF_REFRESH_TOKEN,
     CONF_SETUP_CODE,
     DEFAULT_NAME,
     DEVICE_SELECTION_KEYS,
-    PARTNER_ID,
+    HEAT_PUMP_MODES,
     LINK_POLLING_INTERVAL_SECONDS,
     LINK_POLLING_TIMEOUT_SECONDS,
-    CONF_ENTITY_ROLES,
+    PARTNER_ID,
 )
 
 CONF_ADD_MORE = "add_more"
@@ -135,11 +143,39 @@ def _device_name(hass, device_id: str) -> str:
     return device.name_by_user or device.name or device_id
 
 
+def _category_default_name(category: str | None) -> str:
+    """Return a human-readable default name for a category when no device is selected."""
+    label = _CATEGORY_LABELS.get(category or "", DEFAULT_NAME)
+    return label.capitalize()
+
+
 def _build_entry_description(category: str, device_name: str, role_entities: dict[str, str]) -> str:
     """Build a readable description for the created config entry."""
     category_label = _CATEGORY_LABELS.get(category, category)
     entity_list = ", ".join(f"{role}={eid}" for role, eid in role_entities.items())
     return f"type={category_label}; device={device_name}; entities={entity_list}"
+
+
+def _entity_select_options(hass, entity_id: str) -> list[str]:
+    """Return the available options for a select entity from the HA state machine."""
+    state = hass.states.get(entity_id)
+    return list(state.attributes.get("options", [])) if state else []
+
+
+def _mode_mapping_schema(options: list[str], modes: list[str]) -> vol.Schema:
+    """Build a schema that maps each semantic mode to one of the entity's native options."""
+    opt_dicts = [selector.SelectOptionDict(value=o, label=o) for o in options]
+    return vol.Schema(
+        {
+            vol.Required(mode): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=opt_dicts,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
+            for mode in modes
+        }
+    )
 
 
 class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
@@ -157,6 +193,7 @@ class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
         self._link_error: str | None = None
         self._link_error_detail: str | None = None
         self._poll_task = None
+        self._pending_mode_mapping_steps: list[str] = []
 
     async def async_step_user(self, user_input: dict | None = None):
         """Show an introduction screen, then proceed to category selection."""
@@ -255,7 +292,7 @@ class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
                 if not entity_roles:
                     errors["base"] = "no_entities_selected"
                 else:
-                    device_name = _device_name(self.hass, self._selected_device_id) if self._selected_device_id else DEFAULT_NAME
+                    device_name = _device_name(self.hass, self._selected_device_id) if self._selected_device_id else _category_default_name(self._selected_category)
                     entry_data = {
                         CONF_ENTITY_ROLES: entity_roles,
                         "entry_device_type": self._selected_category,
@@ -268,7 +305,19 @@ class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
                         ),
                     }
                     self.context["entry_data"] = entry_data
-                    return await self.async_step_link_open()
+
+                    _LOGGER.error("CHecking if any modes are selected")
+
+                    # Queue option-mapping steps for any mode-control roles that were mapped.
+                    role_to_entity = {role: eid for eid, role in entity_roles.items()}
+                    self._pending_mode_mapping_steps = []
+                    if CONF_BATTERY_MODE in role_to_entity:
+                        _LOGGER.error("The battery mode is there")
+                        self._pending_mode_mapping_steps.append("map_battery_mode")
+                    if CONF_HEAT_PUMP_MODE in role_to_entity:
+                        self._pending_mode_mapping_steps.append("map_heat_pump_mode")
+
+                    return await self._async_next_step_or_link_open()
             except Exception:  # pragma: no cover - defensive safety net
                 _LOGGER.exception("Unexpected error while selecting entities")
                 errors["base"] = "unexpected_error"
@@ -277,6 +326,61 @@ class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
             step_id="select_entities",
             data_schema=_role_step_schema(roles, selectable_entity_ids),
             errors=errors,
+        )
+
+    async def _async_next_step_or_link_open(self):
+        """Navigate to the next mode-mapping step, or proceed to link_open."""
+        if self._pending_mode_mapping_steps:
+            step = self._pending_mode_mapping_steps.pop(0)
+            return await getattr(self, f"async_step_{step}")()
+        return await self.async_step_link_open()
+
+    async def async_step_map_battery_mode(self, user_input: dict | None = None):
+        """Ask user to map semantic battery modes (charge/discharge/idle) to native options."""
+        entry_data = self.context["entry_data"]
+        role_to_entity = {role: eid for eid, role in entry_data[CONF_ENTITY_ROLES].items()}
+        entity_id = role_to_entity[CONF_BATTERY_MODE]
+        options = _entity_select_options(self.hass, entity_id)
+
+        if not options:
+            _LOGGER.warning(
+                "Config flow: battery_mode entity %s has no options; skipping mapping step", entity_id
+            )
+            entry_data[CONF_BATTERY_MODE_MAPPINGS] = {}
+            return await self._async_next_step_or_link_open()
+
+        if user_input is not None:
+            entry_data[CONF_BATTERY_MODE_MAPPINGS] = dict(user_input)
+            return await self._async_next_step_or_link_open()
+
+        return self.async_show_form(
+            step_id="map_battery_mode",
+            data_schema=_mode_mapping_schema(options, BATTERY_MODES),
+            description_placeholders={"entity_id": entity_id},
+        )
+
+    async def async_step_map_heat_pump_mode(self, user_input: dict | None = None):
+        """Ask user to map semantic heat pump modes (boost/normal) to native options."""
+        entry_data = self.context["entry_data"]
+        role_to_entity = {role: eid for eid, role in entry_data[CONF_ENTITY_ROLES].items()}
+        entity_id = role_to_entity[CONF_HEAT_PUMP_MODE]
+        options = _entity_select_options(self.hass, entity_id)
+
+        if not options:
+            _LOGGER.warning(
+                "Config flow: heat_pump_mode entity %s has no options; skipping mapping step", entity_id
+            )
+            entry_data[CONF_HEAT_PUMP_MODE_MAPPINGS] = {}
+            return await self._async_next_step_or_link_open()
+
+        if user_input is not None:
+            entry_data[CONF_HEAT_PUMP_MODE_MAPPINGS] = dict(user_input)
+            return await self._async_next_step_or_link_open()
+
+        return self.async_show_form(
+            step_id="map_heat_pump_mode",
+            data_schema=_mode_mapping_schema(options, HEAT_PUMP_MODES),
+            description_placeholders={"entity_id": entity_id},
         )
 
     async def async_step_link_open(self, user_input: dict | None = None):
@@ -294,7 +398,7 @@ class ZaehlerfreundeConfigFlow(config_entries.ConfigFlow, domain=PARTNER_ID):
                     ha_instance_id,
                     partner_id=PARTNER_ID,
                     category=self._selected_category,
-                    device_name=_device_name(self.hass, self._selected_device_id) if self._selected_device_id else DEFAULT_NAME,
+                    device_name=_device_name(self.hass, self._selected_device_id) if self._selected_device_id else _category_default_name(self._selected_category),
                 )
                 self._setup_code = link_session.get("setup_code")
                 self._verification_url = link_session.get("verification_url")

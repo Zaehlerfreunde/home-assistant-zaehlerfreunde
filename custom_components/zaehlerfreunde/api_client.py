@@ -8,7 +8,7 @@ from typing import Any
 import aiohttp
 import ssl
 
-from .const import BACKEND_URL, INGEST_URL
+from .const import BACKEND_URL, INGEST_URL, HEMS_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -231,11 +231,63 @@ async def async_send_sensor_value(
                     raise LinkSessionError(
                         f"Failed to send sensor value: {resp.status} {data}"
                     )
-                _LOGGER.debug(
-                    "Successfully sent sensor value for entity %s (HTTP %s)",
-                    entity_id,
-                    resp.status,
-                )
+    except aiohttp.ClientError as err:
+        raise LinkSessionError(f"Connection error: {err}") from err
+    except LinkSessionError:
+        raise
+    except Exception as err:
+        raise LinkSessionError(f"Unexpected error: {err}") from err
+
+
+async def async_fetch_pending_commands(
+    access_token: str,
+    entry_id: str,
+) -> list[dict[str, Any]]:
+    """Fetch pending HEMS commands for this config entry from the backend."""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{HEMS_URL}/ha/commands/pending",
+                params={"entry_id": entry_id},
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status == 401:
+                    raise TokenExpiredError("Access token expired")
+                if resp.status != 200:
+                    raise LinkSessionError(f"Failed to fetch commands: {resp.status}")
+                data = await resp.json()
+                return data.get("commands", [])
+    except aiohttp.ClientError as err:
+        raise LinkSessionError(f"Connection error: {err}") from err
+    except LinkSessionError:
+        raise
+    except Exception as err:
+        raise LinkSessionError(f"Unexpected error: {err}") from err
+
+
+async def async_report_command_result(
+    access_token: str,
+    command_id: str,
+    success: bool,
+    error: str | None = None,
+) -> None:
+    """Report the execution result of a HEMS command to the backend."""
+    payload: dict[str, Any] = {"command_id": command_id, "success": success}
+    if error is not None:
+        payload["error"] = error
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{HEMS_URL}/ha/commands/result",
+                json=payload,
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status == 401:
+                    raise TokenExpiredError("Access token expired")
+                if resp.status not in (200, 201, 204):
+                    raise LinkSessionError(f"Failed to report command result: {resp.status}")
     except aiohttp.ClientError as err:
         raise LinkSessionError(f"Connection error: {err}") from err
     except LinkSessionError:

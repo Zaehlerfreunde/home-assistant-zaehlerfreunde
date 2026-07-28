@@ -29,7 +29,28 @@
           "grid_power": "Grid power (positive: import, negative: export)",
           "battery_power": "Battery charging power",
           "battery_soc": "Battery state of charge (%)",
-          "consumption_power": "Power consumption"
+          "consumption_power": "Power consumption",
+          "charging_switch": "Charging switch (controls start/stop)",
+          "charging_rate": "Charging rate (number entity, kW)",
+          "battery_mode": "Battery mode (select entity)",
+          "heat_pump_mode": "Heat pump mode (select entity)"
+        }
+      },
+      "map_battery_mode": {
+        "title": "Map battery modes",
+        "description": "Select which option on `{entity_id}` corresponds to each mode.",
+        "data": {
+          "charge": "Charge",
+          "discharge": "Discharge",
+          "idle": "Idle / standby"
+        }
+      },
+      "map_heat_pump_mode": {
+        "title": "Map heat pump modes",
+        "description": "Select which option on `{entity_id}` corresponds to each mode.",
+        "data": {
+          "boost": "Boost",
+          "normal": "Normal"
         }
       },
       "link_open": {

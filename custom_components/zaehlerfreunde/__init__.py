@@ -3,15 +3,35 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.event import async_track_state_report_event
+from homeassistant.helpers.event import async_track_state_report_event, async_track_time_interval
 
-from .api_client import LinkSessionError, TokenExpiredError, async_refresh_tokens, async_send_sensor_value
-from .const import CONF_ACCESS_TOKEN, CONF_ENTITY_ROLES, CONF_REFRESH_TOKEN, PARTNER_ID, LAST_UPLOAD_SENSOR_KEY, PLATFORMS
+from .api_client import (
+    LinkSessionError,
+    TokenExpiredError,
+    async_fetch_pending_commands,
+    async_refresh_tokens,
+    async_report_command_result,
+    async_send_sensor_value,
+)
+from .command_executor import async_execute_command
+from .const import (
+    COMMAND_POLLING_INTERVAL_SECONDS,
+    LAST_COMMAND_SENSOR_KEY,
+    LAST_POLL_SENSOR_KEY,
+    CONF_ACCESS_TOKEN,
+    CONF_BATTERY_MODE_MAPPINGS,
+    CONF_ENTITY_ROLES,
+    CONF_HEAT_PUMP_MODE_MAPPINGS,
+    CONF_REFRESH_TOKEN,
+    LAST_UPLOAD_SENSOR_KEY,
+    PARTNER_ID,
+    PLATFORMS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -81,11 +101,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntr
         else lambda: None
     )
 
+    @callback
+    def _on_command_poll_interval(now) -> None:
+        hass.async_create_task(_async_poll_commands(hass, entry))
+
+    unsub_command_listener = async_track_time_interval(
+        hass,
+        _on_command_poll_interval,
+        timedelta(seconds=COMMAND_POLLING_INTERVAL_SECONDS),
+    )
+
     hass.data[PARTNER_ID][entry.entry_id] = {
         CONF_ACCESS_TOKEN: access_token,
         CONF_ENTITY_ROLES: entity_roles,
         "unsub_options_update_listener": entry.add_update_listener(_async_options_updated),
         "unsub_state_listener": unsub_state_listener,
+        "unsub_command_listener": unsub_command_listener,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -194,11 +225,76 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEnt
         if entry_data:
             entry_data["unsub_options_update_listener"]()
             entry_data["unsub_state_listener"]()
+            entry_data["unsub_command_listener"]()
         hass.data[PARTNER_ID].pop(entry.entry_id, None)
         _LOGGER.debug("Successfully unloaded Zaehlerfreunde entry %s", entry.entry_id)
     else:
         _LOGGER.warning("Failed to unload platforms for Zaehlerfreunde entry %s", entry.entry_id)
     return unload_ok
+
+
+async def _async_poll_commands(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry) -> None:
+    """Poll the backend for pending HEMS commands and execute them."""
+    entry_data = hass.data[PARTNER_ID].get(entry.entry_id)
+    if entry_data is None:
+        return
+
+    access_token: str = entry_data.get(CONF_ACCESS_TOKEN, "")
+    entity_roles: dict = entry_data.get(CONF_ENTITY_ROLES, {})
+
+    poll_sensor = entry_data.get(LAST_POLL_SENSOR_KEY)
+    if poll_sensor is not None:
+        poll_sensor.record_poll()
+
+    try:
+        commands = await async_fetch_pending_commands(access_token, entry.entry_id)
+    except TokenExpiredError:
+        _LOGGER.warning("Access token expired during command poll, refreshing for entry %s", entry.entry_id)
+        refresh_token: str = entry.data.get(CONF_REFRESH_TOKEN, "")
+        try:
+            new_tokens = await async_refresh_tokens(refresh_token)
+        except LinkSessionError as err:
+            _LOGGER.error("Token refresh failed during command poll for entry %s: %s", entry.entry_id, err)
+            return
+        access_token = new_tokens.get("access_token", "")
+        hass.config_entries.async_update_entry(
+            entry,
+            data={
+                **entry.data,
+                CONF_ACCESS_TOKEN: access_token,
+                CONF_REFRESH_TOKEN: new_tokens.get("refresh_token", refresh_token),
+            },
+        )
+        entry_data[CONF_ACCESS_TOKEN] = access_token
+        try:
+            commands = await async_fetch_pending_commands(access_token, entry.entry_id)
+        except LinkSessionError as err:
+            _LOGGER.error("Failed to fetch commands after token refresh for entry %s: %s", entry.entry_id, err)
+            return
+    except LinkSessionError as err:
+        _LOGGER.warning("Failed to fetch pending commands for entry %s: %s", entry.entry_id, err)
+        return
+
+    for command in commands:
+        command_id = command.get("command_id", "<unknown>")
+        success, error = await async_execute_command(
+            hass,
+            entity_roles,
+            command,
+            battery_mode_mappings=entry.data.get(CONF_BATTERY_MODE_MAPPINGS),
+            heat_pump_mode_mappings=entry.data.get(CONF_HEAT_PUMP_MODE_MAPPINGS),
+        )
+        try:
+            await async_report_command_result(access_token, command_id, success, error)
+        except LinkSessionError as err:
+            _LOGGER.error("Failed to report result for command %s: %s", command_id, err)
+
+        if success:
+            entry_data = hass.data[PARTNER_ID].get(entry.entry_id)
+            if entry_data is not None:
+                cmd_sensor = entry_data.get(LAST_COMMAND_SENSOR_KEY)
+                if cmd_sensor is not None:
+                    cmd_sensor.record_execution(command.get("type"), command.get("params", {}))
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntry) -> None:

@@ -25,7 +25,28 @@
         "description": "Map the device's entities to their roles.",
         "data": {
           "solar_power": "Solar power",
-          "solar_yield_total": "Solar yield total"
+          "solar_yield_total": "Solar yield total",
+          "charging_switch": "Charging switch (controls start/stop)",
+          "charging_rate": "Charging rate (number entity, kW)",
+          "battery_mode": "Battery mode (select entity)",
+          "heat_pump_mode": "Heat pump mode (select entity)"
+        }
+      },
+      "map_battery_mode": {
+        "title": "Map battery modes",
+        "description": "Select which option on `{entity_id}` corresponds to each mode.",
+        "data": {
+          "charge": "Charge",
+          "discharge": "Discharge",
+          "idle": "Idle / standby"
+        }
+      },
+      "map_heat_pump_mode": {
+        "title": "Map heat pump modes",
+        "description": "Select which option on `{entity_id}` corresponds to each mode.",
+        "data": {
+          "boost": "Boost",
+          "normal": "Normal"
         }
       },
       "link_open": {

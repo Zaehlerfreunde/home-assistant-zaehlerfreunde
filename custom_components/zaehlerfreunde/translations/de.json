@@ -29,7 +29,28 @@
           "grid_power": "Netzleistung (positiv: Bezug, negativ: Einspeisung)",
           "battery_power": "Batterieladeleistung",
           "battery_soc": "Batterieladestand (in %)",
-          "consumption_power": "Verbrauchsleistung"
+          "consumption_power": "Verbrauchsleistung",
+          "charging_switch": "Ladeschalter (Start/Stop)",
+          "charging_rate": "Ladeleistung (Zahlen-Entität, kW)",
+          "battery_mode": "Batteriemodus (Auswahl-Entität)",
+          "heat_pump_mode": "Wärmepumpen-Modus (Auswahl-Entität)"
+        }
+      },
+      "map_battery_mode": {
+        "title": "Batteriemodi zuordnen",
+        "description": "Wählen Sie, welche Option bei `{entity_id}` welchem Modus entspricht.",
+        "data": {
+          "charge": "Laden",
+          "discharge": "Entladen",
+          "idle": "Standby / Aus"
+        }
+      },
+      "map_heat_pump_mode": {
+        "title": "Wärmepumpen-Modi zuordnen",
+        "description": "Wählen Sie, welche Option bei `{entity_id}` welchem Modus entspricht.",
+        "data": {
+          "boost": "Boost",
+          "normal": "Normal"
         }
       },
       "link_open": {
