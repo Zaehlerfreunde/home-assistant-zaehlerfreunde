@@ -24,8 +24,10 @@ from .const import (
     LAST_COMMAND_SENSOR_KEY,
     LAST_POLL_SENSOR_KEY,
     CONF_ACCESS_TOKEN,
+    CONF_BATTERY_MODE,
     CONF_BATTERY_MODE_MAPPINGS,
     CONF_ENTITY_ROLES,
+    CONF_HEAT_PUMP_MODE,
     CONF_HEAT_PUMP_MODE_MAPPINGS,
     CONF_REFRESH_TOKEN,
     LAST_UPLOAD_SENSOR_KEY,
@@ -134,6 +136,31 @@ async def _async_forward_sensor_value(
     time_fired: datetime,
 ) -> None:
     """Send a single sensor value to the backend, refreshing the token on 403."""
+    if role == CONF_BATTERY_MODE:
+        mappings: dict[str, str] = entry.data.get(CONF_BATTERY_MODE_MAPPINGS, {})
+        native_to_canonical = {v: k for k, v in mappings.items()}
+        canonical = native_to_canonical.get(state)
+        if canonical is None:
+            _LOGGER.warning(
+                "No battery mode mapping found for native value '%s' on entity %s; skipping upload",
+                state,
+                entity_id,
+            )
+            return
+        state = canonical
+    elif role == CONF_HEAT_PUMP_MODE:
+        mappings = entry.data.get(CONF_HEAT_PUMP_MODE_MAPPINGS, {})
+        native_to_canonical = {v: k for k, v in mappings.items()}
+        canonical = native_to_canonical.get(state)
+        if canonical is None:
+            _LOGGER.warning(
+                "No heat pump mode mapping found for native value '%s' on entity %s; skipping upload",
+                state,
+                entity_id,
+            )
+            return
+        state = canonical
+
     try:
         _LOGGER.debug(
             "Sending sensor value for entity %s (role=%s): state=%s, attributes=%s",
