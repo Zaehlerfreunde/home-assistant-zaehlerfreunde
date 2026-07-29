@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.event import async_track_state_report_event, async_track_time_interval
+from homeassistant.helpers.event import async_track_state_change_event, async_track_state_report_event, async_track_time_interval
 
 from .api_client import (
     LinkSessionError,
@@ -97,8 +97,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntr
         )
 
     tracked_entities = list(entity_roles.keys())
-    unsub_state_listener = (
+    unsub_state_report_listener = (
         async_track_state_report_event(hass, tracked_entities, _on_state_change)
+        if tracked_entities
+        else lambda: None
+    )
+    unsub_state_change_listener = (
+        async_track_state_change_event(hass, tracked_entities, _on_state_change)
         if tracked_entities
         else lambda: None
     )
@@ -117,7 +122,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEntr
         CONF_ACCESS_TOKEN: access_token,
         CONF_ENTITY_ROLES: entity_roles,
         "unsub_options_update_listener": entry.add_update_listener(_async_options_updated),
-        "unsub_state_listener": unsub_state_listener,
+        "unsub_state_report_listener": unsub_state_report_listener,
+        "unsub_state_change_listener": unsub_state_change_listener,
         "unsub_command_listener": unsub_command_listener,
     }
 
@@ -272,7 +278,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZaehlerfreundeConfigEnt
         entry_data = hass.data[PARTNER_ID].get(entry.entry_id)
         if entry_data:
             entry_data["unsub_options_update_listener"]()
-            entry_data["unsub_state_listener"]()
+            entry_data["unsub_state_report_listener"]()
+            entry_data["unsub_state_change_listener"]()
             entry_data["unsub_command_listener"]()
         hass.data[PARTNER_ID].pop(entry.entry_id, None)
         _LOGGER.debug("Successfully unloaded Zaehlerfreunde entry %s", entry.entry_id)
