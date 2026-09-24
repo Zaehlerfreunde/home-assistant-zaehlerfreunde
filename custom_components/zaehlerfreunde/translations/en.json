@@ -34,6 +34,10 @@
           "charging_rate": "Charging rate (number entity, kW)",
           "battery_mode": "Battery mode (select entity)",
           "heat_pump_mode": "Heat pump mode (select entity)"
+        },
+        "data_description": {
+          "battery_mode": "Required to control the charging/discharging mode of the battery.",
+          "charging_rate": "Required to control the charging rate, e.g. for PV-surplus charging. For batteries a negative value means discharging."
         }
       },
       "map_battery_mode": {
